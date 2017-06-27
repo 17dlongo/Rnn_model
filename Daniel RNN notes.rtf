@@ -1,0 +1,25 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf600
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fnil\fcharset222 Ayuthaya;}
+{\colortbl;\red255\green255\blue255;\red47\green255\blue18;\red0\green0\blue0;\red180\green36\blue25;
+}
+{\*\expandedcolortbl;\csgray\c100000;\cssrgb\c15686\c99608\c7843;\csgray\c0\c90000;\cssrgb\c76410\c21699\c12524;
+}
+\margl1440\margr1440\vieww15480\viewh10240\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\ri-618\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 - Use masks for inputs only\
+- max_sequence_len = 20, or whatever num dates you\'92re passing in, before we take out weekends/holidays\
+- Have inputs masks be of size (batch_size, max_sequence_len)\
+- We don\'92t need label masks, because labels are always a non-holiday\
+- In input_placeholder, during preprocessing, TAKE OUT all weekends/holidays, so your inputs are of size(batch_size, max_sequence_len, num_features). But, have the first sequence_len dates be the real values, where sequence_len <= max_sequence_len and is different for every example, and the last max_sequence_len - sequence_len dates be all 0\'92s, or 444s, or whatever \
+- When you do dynamic_rnn in add_prediction_op:\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\ri-618\pardirnatural\partightenfactor0
+
+\f1 \cf2 \cb3 \CocoaLigature0  seq_len = tf.reduce_sum(tf.cast(self.input_masks_placeholder, tf.int32), reduction_indices=\cf4 1\cf2 )\
+ Outs, _ = dynamic_rnn(lstm_cell, self.input_placeholder,\
+                        sequence_length=seq_len, dtype=tf.float32)\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\ri-618\pardirnatural\partightenfactor0
+
+\f0 \cf0 \cb1 \CocoaLigature1 \
+- add_loss_op doesn\'92t need any masking}
