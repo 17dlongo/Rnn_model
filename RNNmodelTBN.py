@@ -1,7 +1,7 @@
 import tensorflow as tf
 import sys
 sys.path.append('/Users/DanielLongo/Desktop/Rnn_Model/MCreates')
-from Me_create import create_XY #(stocks,start,end,length)
+from MCFin import create_XY #(stocks,start,end,length)
 from time import strftime, gmtime
 import numpy as np
 #tensorboard --logdir=path/to/directory
@@ -20,17 +20,17 @@ def make_list(file): # takes Nasdaq or NYSE file and creates a list of tickers
 
 class Model(object):
     def __init__(self):
-        self.exPerBatch= 4
-        self.start_date = '2017-01-01'
+        self.exPerBatch = 16
+        self.start_date = '2007-01-01'
         self.end_date = '2017-02-01'
  #       self.tickers = make_list('Nasdaq.csv')
         self.state_size = 100 # depth of rnn number of hidden layers 
-        self.sequence_length = 5 # len(time)
-        self.epoch = 100000 #iterations of model
-        self.lr = .1 #learning rate
-        self.stocks = ['ZNGA']
+        self.sequence_length = 15 # len(time)
+        self.epoch = 5000000 #iterations of model
+        self.lr = .0001 #learning rate
+        self.stocks = ['AAPL','MSFT']
         self.tickers= self.stocks
-        self.features = [0,1,1,-1,0,0] #shows if data is to be normalized and to what number feature #['Open','CLose','AdjClose','Volume','High','Low']
+        self.features = [0,1,1,3,1,1] #shows if data is to be normalized and to what number feature #['Open','CLose','AdjClose','Volume','High','Low']
         self.Spred = None # -1 is for no normalization
         self.logs_path = 'tensorboard/'+strftime("%Y_%m_%d_%H_%M_%S",gmtime())
         
@@ -39,9 +39,13 @@ class Model(object):
         self.labels_placeholder = tf.placeholder(tf.float32, (None,(len(self.features)*len(self.stocks))))
 
     def create_feed_dict(self,inputs_batch,labels_batch = None):
-        feed_dict = {
-            self.input_placeholder: inputs_batch,
-            self.labels_placeholder: labels_batch}
+        feed_dict = {}
+        feed_dict[self.input_placeholder] = inputs_batch
+        if labels_batch != None:
+                sel
+                self.labels_placeholder: labels_batch}
+                return feed_dict
+        feed_dict = 
      #   print("Here",np.shape(self.input_placeholder),np.shape(inputs_batch))
 #        print(feed_dict[self.input_placeholder])
         return feed_dict
@@ -72,7 +76,7 @@ class Model(object):
 
     def train_on_batch(self,sess,inputs_batch,labels_batch):
         feed = self.create_feed_dict(inputs_batch,labels_batch=labels_batch)
-        #print(self.Spred.eval(session=sess,feed_dict=feed))
+       # print(self.Spred.eval(session=sess,feed_dict=feed))
         #print(self.labels_placeholder.eval(session=sess,feed_dict=feed))
         _, loss,summary = sess.run([self.train_op,self.loss_op,self.merged_summary_op],feed_dict=feed)       
         self.train_writer.add_summary(summary,self.counter)

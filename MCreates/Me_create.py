@@ -13,7 +13,7 @@ def create_vector(stocks,time): # (stock ticker, dates) date = [year-0month-0day
     for i in range(len(stocks)):
         add = None
         try:
-            with open("/Users/DanielLongo/Desktop/StockModule/StockFiles/"+stocks[i]+"","r") as file:
+            with open("/Users/DanielLongo/Desktop/Stocks/"+stocks[i]+"","r") as file:
                 for line in file:
                     line = line.split(',')
                     Date = line[0] # The Date
@@ -30,6 +30,7 @@ def create_vector(stocks,time): # (stock ticker, dates) date = [year-0month-0day
                 add = [float(-444),float(-444),float(-444),float(-444),float(-444),float(-444)]
         except FileNotFoundError:
             add = [float(-444),float(-444),float(-444),float(-444),float(-444),float(-444)]
+            print(stocks[i])
              #add= 'FILENOTFOUND','FILENOTFOUND','FILENOTFOUND','FILENOTFOUND','FILENOTFOUND','FILENOTFOUND
         data += add
         i = -1
