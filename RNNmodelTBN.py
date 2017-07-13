@@ -21,17 +21,19 @@ def make_list(file): # takes Nasdaq or NYSE file and creates a list of tickers
 class Model(object):
     def __init__(self):
         self.exPerBatch = 16
-        self.start_date = '2007-01-01'
-        self.end_date = '2017-02-01'
+        self.start_date = '2017-01-01'
+        self.end_date = '2017-02-02'
  #       self.tickers = make_list('Nasdaq.csv')
-        self.state_size = 100 # depth of rnn number of hidden layers 
-        self.sequence_length = 15 # len(time)
-        self.epoch = 5000000 #iterations of model
-        self.lr = .0001 #learning rate
-        self.stocks = ['AAPL','MSFT']
+        self.state_size = 200 # depth of rnn number of hidden layers 
+        self.sequence_length = 10 # len(time)
+        self.epoch = 900 #iterations of model
+        self.lr = .00035 #learning rate
+        self.stocks = ['AAPL','MSFT','CSCO','IBM','INTC','KS','ORCL']
+     #   self.stocks = ['AAPl']
         self.tickers= self.stocks
         self.features = [0,1,1,3,1,1] #shows if data is to be normalized and to what number feature #['Open','CLose','AdjClose','Volume','High','Low']
         self.Spred = None # -1 is for no normalization
+        self.Counter = 0
         self.logs_path = 'tensorboard/'+strftime("%Y_%m_%d_%H_%M_%S",gmtime())
         
     def add_placeholders(self):
@@ -42,10 +44,7 @@ class Model(object):
         feed_dict = {}
         feed_dict[self.input_placeholder] = inputs_batch
         if labels_batch != None:
-                sel
-                self.labels_placeholder: labels_batch}
-                return feed_dict
-        feed_dict = 
+            feed_dict[self.labels_placeholder] = labels_batch
      #   print("Here",np.shape(self.input_placeholder),np.shape(inputs_batch))
 #        print(feed_dict[self.input_placeholder])
         return feed_dict
@@ -81,8 +80,25 @@ class Model(object):
         _, loss,summary = sess.run([self.train_op,self.loss_op,self.merged_summary_op],feed_dict=feed)       
         self.train_writer.add_summary(summary,self.counter)
         self.train_writer.flush()
+        #print(self.Spred.eval(session=sess,feed_dict=feed))
+        #print(self.labels_placeholder.eval(session=sess,feed_dict=feed))
         return loss
-    
+
+    def evalidateBatch(inputs_batch,labels_batch):
+        feed_dict = self.create_feed_dict(inputs_batch,labels_batch)
+        _, loss,summary = sess.run([self.train_op,self.loss_op,self.merged_summary_op],feed_dict=feed)
+        predicted = self.Spred.eval(session=sess,feed_dict=feed)
+        actual = self.labels_placeholder.eval(session=sess,feed_dict=feed)
+        Diff = (tf.subtract(actual,predicted))
+        batch_losses = tf.sqrt(tf.reduce_sum(tf.square(Diff),axis=1))
+        #mean_loss = tf.reduce_mean(batch_loss)
+        return batch_losses
+
+    def eval(batches):
+        for batchX,batch_Y in batchesEval:
+            batch_losses += [evalidateBatch(batchX,batch_Y)]
+        return sum(batch_losses)/float(len(batch_losses*len(batches[0])))
+
     def build(self):
         self.add_placeholders()
         self.pred = self.add_prediction_op()
@@ -91,34 +107,47 @@ class Model(object):
         tf.summary.scalar('Loss', self.loss_op)
         self.merged_summary_op = tf.summary.merge_all()
 
-      
-    def rnn(self):
-        init = tf.global_variables_initializer()
-        sess= tf.Session()
- #       saver = tf.train.import_meta_graph("TtestT.meta")
-#        saver.restore(sess,tf.train.latest_checkpoint('./'))
-        sess.run(init) #initializes all global variables
-        self.train_writer = tf.summary.FileWriter(self.logs_path+'/train',sess.graph) #creates a summary path for files !!!!!!
-        batches = list(create_XY(self.tickers, # tickers
-        self.start_date,  # start (list style)
-        self.end_date, # end (list style)
-        self.sequence_length, # len(time)
-        self.exPerBatch,
-        self.features)) #  return batch_X,batch_Y,masksX,masksY
- #       print(batches[0])
-        if batches == []:
-            print("ERROR")
-            return None
-        self.counter = 0 # counts for tensorboard summary
-        #print(np.shape(batches),np.shape(batches[0]),np.shape(batches[1]))
-        #print(len(batches[0]),len(batches[1]))
-        #print("batches",batches[0])
-        #print("batchesII",batches[1])
-        for i in range(self.epoch):
-            for batchX,batchY in batches:
-                print(self.train_on_batch(sess,batchX,batchY))
-                self.counter += 1
-#        saver.save(sess,"TtestT")
+    def rnn(self,Type=None):
+        #saver = tf.train.Saver()
+        with tf.Session() as sess:
+            init = tf.global_variables_initializer()
+            sess.run(init) #initializes all global variables
+            meta_graph_def = tf.train.export_meta_graph(filename='Tech2.meta')
+        
+        new_graph = tf.Graph()
+        with tf.Session(graph=new_graph) as sess:
+            init = tf.global_variables_initializer()
+            sess.run(init) #initializes all global variables
+            new_saver = tf.train.import_meta_graph('Tech2.meta')
+            new_saver.restore(sess,'Tech2')
+
+            self.train_writer = tf.summary.FileWriter(self.logs_path+'/train',sess.graph) #creates a summary path for files !!!!!!
+            batches = list(create_XY(self.tickers, # tickers
+            self.start_date,  # start (list style)
+            self.end_date, # end (list style)
+            self.sequence_length, # len(time)
+            self.exPerBatch,
+            self.features)) #  return batch_X,batch_Y,masksX,masksY
+     #       print(batches[0])
+            if batches == []:
+                print("ERROR")
+                return None
+            self.counter = 0 # counts for tensorboard summary
+            #print(np.shape(batches),np.shape(batches[0]),np.shape(batches[1]))
+            #print(len(batches[0]),len(batches[1]))
+            #print("batches",batches[0])
+            #print("batchesII",batches[1])
+            if Type == "Eval":
+                eval(batches)
+            else:
+                for i in range(self.epoch):
+                    for batchX,batchY in batches:
+                        print(self.train_on_batch(sess,batchX,batchY))
+                        self.counter += 1
+        #meta_graph_def = tf.train.export_meta_graph(filename='Tech2.meta')
+        #saver = tf.train.Saver()
+        #saver.save(sess,"Tech2")
+
 
 def main():
     model = Model()

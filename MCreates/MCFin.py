@@ -63,7 +63,11 @@ def normalize(today,yesterday):
         if compareNumber == -1:
             new[i] = today[i]
             continue
-        new[i] = (today[i]-yesterday[compareNumber])/yesterday[compareNumber]
+        try:
+            new[i] = (today[i]-yesterday[compareNumber])/yesterday[compareNumber]
+        except ZeroDivisionError:
+            print("div 0")
+            new[i] = float(0)
     return new
 
 def getYesterday(date,stock):
