@@ -4,8 +4,9 @@ sys.path.append('/Users/DanielLongo/Desktop/Rnn_Model/MCreates')
 from MCFin import create_XY #(stocks,start,end,length)
 from time import strftime, gmtime
 import numpy as np
+from random import shuffle 
 #tensorboard --logdir=path/to/directory
-
+#        tf.reset_default_graph()
 def make_list(file): # takes Nasdaq or NYSE file and creates a list of tickers
     tickers = []
     counter = 0
@@ -26,7 +27,7 @@ class Model(object):
  #       self.tickers = make_list('Nasdaq.csv')
         self.state_size = 200 # depth of rnn number of hidden layers 
         self.sequence_length = 10 # len(time)
-        self.epoch = 900 #iterations of model
+        self.epoch = 90 #iterations of model
         self.lr = .00035 #learning rate
         self.stocks = ['AAPL','MSFT','CSCO','IBM','INTC','KS','ORCL']
      #   self.stocks = ['AAPl']
@@ -94,7 +95,7 @@ class Model(object):
         #mean_loss = tf.reduce_mean(batch_loss)
         return batch_losses
 
-    def eval(batches):
+    def Eval(batches):
         for batchX,batch_Y in batchesEval:
             batch_losses += [evalidateBatch(batchX,batch_Y)]
         return sum(batch_losses)/float(len(batch_losses*len(batches[0])))
@@ -106,6 +107,90 @@ class Model(object):
         self.train_op = self.add_training_op(self.loss_op)
         tf.summary.scalar('Loss', self.loss_op)
         self.merged_summary_op = tf.summary.merge_all()
+        
+    def rnn(self,Type=None,load='hi'):
+        sess = tf.Session()
+        if load != '':
+            saver = tf.train.import_meta_graph('./tesT.meta')
+            saver.restore(sess,'./tesT')
+        
+        batches = list(create_XY(
+            self.tickers,
+            self.start_date,  # start (list style)
+            self.end_date, # end (list style)
+            self.sequence_length, # len(time)
+            self.exPerBatch,
+            self.features))
+        
+        shuffle(batches)
+        init = tf.global_variables_initializer()
+        sess.run(init) #initializes all global variables
+
+        if batches == []:
+            print("ERROR")
+            return None
+
+        self.train_writer = tf.summary.FileWriter(self.logs_path+'/train',sess.graph) #creates a summary path for files !!!!!!
+        self.counter  = 0 # counts for tensorboard summary
+
+        if Type == "Eval":
+            return Eval(batches)
+
+        for i in range(self.epoch):
+            for batchX,batchY in batches:
+                print(self.train_on_batch(sess,batchX,batchY))
+                self.counter += 1
+
+        #meta_graph_def = tf.train.export_meta_graph(filename="testing123.meta")
+        #saver = tf.train.Saver()
+        #saver.save(sess,'tesT')
+        saver0 = tf.train.Saver()
+        saver0.save(sess,"tesT")
+        saver0.export_meta_graph("tesT.meta")
+
+
+
+'''
+        def rnn(self,Type=None):
+        #saver = tf.train.Saver()
+        with tf.Session() as sess:
+            init = tf.global_variables_initializer()
+            sess.run(init) #initializes all global variables
+            meta_graph_def = tf.train.export_meta_graph(filename='Tech2.meta')
+        
+        new_graph = tf.Graph()
+        with tf.Session(graph=new_graph) as sess:
+            init = tf.global_variables_initializer()
+            sess.run(init) #initializes all global variables
+            new_saver = tf.train.import_meta_graph('Tech2.meta')
+            new_saver.restore(sess,'Tech2')
+
+            self.train_writer = tf.summary.FileWriter(self.logs_path+'/train',sess.graph) #creates a summary path for files !!!!!!
+            batches = list(create_XY(self.tickers, # tickers
+            self.start_date,  # start (list style)
+            self.end_date, # end (list style)
+            self.sequence_length, # len(time)
+            self.exPerBatch,
+            self.features)) #  return batch_X,batch_Y,masksX,masksY
+     #       print(batches[0])
+            if batches == []:
+                print("ERROR")
+                return None
+            self.counter = 0 # counts for tensorboard summary
+            #print(np.shape(batches),np.shape(batches[0]),np.shape(batches[1]))
+            #print(len(batches[0]),len(batches[1]))
+            #print("batches",batches[0])
+            #print("batchesII",batches[1])
+            if Type == "Eval":
+                eval(batches)
+            else:
+                for i in range(self.epoch):
+                    for batchX,batchY in batches:
+                        print(self.train_on_batch(sess,batchX,batchY))
+                        self.counter += 1
+        #meta_graph_def = tf.train.export_meta_graph(filename='Tech2.meta')
+        #saver = tf.train.Saver()
+        #saver.save(sess,"Tech2")
 
     def rnn(self,Type=None):
         #saver = tf.train.Saver()
@@ -147,7 +232,7 @@ class Model(object):
         #meta_graph_def = tf.train.export_meta_graph(filename='Tech2.meta')
         #saver = tf.train.Saver()
         #saver.save(sess,"Tech2")
-
+'''
 
 def main():
     model = Model()
